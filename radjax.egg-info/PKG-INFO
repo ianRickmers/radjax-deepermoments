@@ -1,0 +1,117 @@
+Metadata-Version: 2.4
+Name: radjax
+Version: 0.1.0
+Summary: JAX-based line radiative transfer for protoplanetary disks
+Author: Aviad Levis, Nhan (Len) Luong
+Project-URL: Homepage, https://github.com/aviadlevis/radjax
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: flax
+Requires-Dist: optax
+Requires-Dist: diffrax
+Requires-Dist: tensorboard
+Requires-Dist: tensorboardX
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: scikit-learn
+Requires-Dist: scikit-image
+Requires-Dist: matplotlib
+Requires-Dist: jupyterlab
+Requires-Dist: tqdm
+Requires-Dist: ipympl
+Requires-Dist: mpmath
+Requires-Dist: ruamel.yaml
+Requires-Dist: corner
+Requires-Dist: gofish
+Provides-Extra: jax-cpu
+Requires-Dist: jax[cpu]>=0.4; extra == "jax-cpu"
+Provides-Extra: jax-cuda12
+Requires-Dist: jax[cuda12]>=0.4; extra == "jax-cuda12"
+Provides-Extra: jax-metal
+Requires-Dist: jax[cpu]>=0.4; extra == "jax-metal"
+Requires-Dist: jax-metal>=0.0.7; extra == "jax-metal"
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Requires-Dist: isort; extra == "dev"
+Requires-Dist: sphinx; extra == "dev"
+Requires-Dist: myst-parser; extra == "dev"
+Requires-Dist: nbsphinx; extra == "dev"
+
+# RadJAX
+A `JAX` based line radiative transfer code for inference of protoplanetary disks.  
+JAX-based array operations produce significant speedups, enabling fast computations of line-rte. 
+
+---
+
+## Installation
+
+We recommend installing in a clean conda environment. Below are quick recipes for the three most common setups.
+
+
+### Step-by-step
+
+#### 1. Create environment
+```
+conda config --add channels conda-forge
+conda create -n jax python=3.12
+conda activate jax
+```
+
+#### 2. Install CUDA (Linux + NVIDIA GPU only)
+```
+conda install cuda -c nvidia
+```
+
+#### 3. Install JAX (platform-specific)
+Follow the official [JAX installation guide](https://docs.jax.dev/en/latest/installation.html).
+Use the variant matching your system:
+```
+# Linux / Windows (CPU)
+pip install "jax[cpu]"
+
+# Linux + CUDA 12
+pip install "jax[cuda12]"
+
+# macOS (Apple Silicon, Metal)
+pip install "jax[cpu]" "jax-metal"
+```
+
+#### 4. Install radjax (-e for editable/developer mode) 
+```
+git clone https://github.com/aviadlevis/radjax.git
+cd radjax
+pip install -e .
+```
+
+#### Editable install notes (-e flag)
+This project uses a modern `pyproject.toml` build (PEP 660).  
+If you see an error like:
+```
+A "pyproject.toml" file was found, but editable mode currently requires a setuptools-based build.
+```
+
+it usually means your `pip` / `setuptools` are too old. Fix it by upgrading in your environment:
+```
+python -m pip install --upgrade pip setuptools wheel
+```
+
+
+#### 5. Optional: visualization + MCMC tools
+```
+conda install emcee h5py ffmpeg
+```
+
+---
+
+## Getting started
+To try out radjax, open the example notebooks in the `tutorials/` folder.
+They demonstrate how to:
+ - load disk + observation metadata from YAML files
+ - render synthetic disk cubes
+ - render paramtric disks and convolve with ALMA beams to compare against observational data.
+
+Launch `JupyterLab` and explore:
+```
+jupyter lab tutorials/
+```

@@ -45,7 +45,7 @@ class RayBundle:
     coords_xyz: jnp.ndarray   # (H, W, N, 3), world XYZ along each ray
     pixel_area: jnp.ndarray   # (H, W), projected area per pixel in [sr] or [cm^2] on image plane
     obs_dir: jnp.ndarray      # (3,), unit vector from source to observer
-    
+
 @struct.dataclass
 class ObservationParams:
     """
@@ -151,7 +151,7 @@ class ObservationParams:
         if self.is_synthetic:
             half = 0.5 * self.velocity_width_ms
             return (-half, +half)
-        return self.velocity_range  # type: ignore    
+        return self.velocity_range  # type: ignore
 
 
 def rays_alma_projection(
@@ -224,18 +224,18 @@ def rays_alma_projection(
     pixel_area = (fov_cm / float(npix)) ** 2
 
     rays = RayBundle(
-        nx=nx, 
-        ny=ny, 
-        coords_xyz=ray_coords, 
-        pixel_area=pixel_area, 
+        nx=nx,
+        ny=ny,
+        coords_xyz=ray_coords,
+        pixel_area=pixel_area,
         obs_dir=obs_dir
     )
-    
+
     return rays
 
 def rays_from_params(
-    obs_params: ObservationParams, 
-    x_sky: ArrayLike, 
+    obs_params: ObservationParams,
+    x_sky: ArrayLike,
     y_sky: ArrayLike
 ):
     return rays_alma_projection_jit(
@@ -283,10 +283,10 @@ def rotate_rays(
     - The base coordinates are assumed to be in world space for some reference
       angles.
     - Rotations follow the same convention as :func:`rays_alma_projection`:
-      
-      * ``obs_dir = rotate([0,0,1], incl, phi)``  
-      * ``coords  = rotate(coords, incl, -phi)``  
-      * ``coords  = rotate_about(obs_dir, coords, -posang)``  
+
+      * ``obs_dir = rotate([0,0,1], incl, phi)``
+      * ``coords  = rotate(coords, incl, -phi)``
+      * ``coords  = rotate_about(obs_dir, coords, -posang)``
 
     Use this when inclination or position angle are part of the parameter
     vector ``θ``, but the overall camera grid (distance, FOV, ``nray``, ``z_width``)
@@ -461,7 +461,7 @@ def print_params(params: "ObservationParams") -> None:
     print("=" * 50)
 
 
-    
+
 # ----------------------------------------------------------------------------- #
 # Frequencies
 # ----------------------------------------------------------------------------- #
@@ -519,7 +519,7 @@ def render_cube(
         Temperature along rays [K].
     velocity_ray : (H, W, N, 3)
         3D velocity vectors along rays.
-    nu0: float, 
+    nu0: float,
         Central frequency, e.g. from alma_cube.nu0
     freqs : (F,)
         Frequency channels [Hz].
@@ -560,14 +560,14 @@ def render_cube(
         compute_fn = line_rte.compute_spectral_cube
     else:
         raise ValueError(f"Unknown backend={backend!r}. Must be 'vmap', 'pmap', or 'none'.")
-    
+
     images = compute_fn(
         freqs, velocity_ray, alpha_tot, n_up, n_dn,
         mol.a_ud, mol.b_ud, mol.b_du,
         rays.coords_xyz, rays.obs_dir, nu0, rays.pixel_area
     )
     images = jnp.clip(jnp.nan_to_num(images).reshape(-1, rays.ny, rays.nx)[:freqs.size], 0.0)
-    
+
     return images
 
 
@@ -636,7 +636,7 @@ def sample_symmetric_disk__along_rays(
     # Convert azimuthal scalar speed to 3D velocity vectors along the rays
     velocity_ray = phys.azimuthal_velocity(rays.coords_xyz, v_phi_ray)      # (H, W, N, 3)
 
-    return nd_ray, temperature_ray, velocity_ray
+    return nd_ray, temperature_ray, velocity_ray, v_phi_ray
 
 
 # ----------------------------------------------------------------------------- #
@@ -661,7 +661,7 @@ def beam(
     kernel = jnp.asarray(Gaussian2DKernel(x_stddev=sigma_min, y_stddev=sigma_maj, theta=np.radians(bpa)).array)
     return jnp.asarray(kernel)
 
-    
+
 # ----------------------------------------------------------------------------- #
 # JIT wrappers & vectorized ops
 # ----------------------------------------------------------------------------- #
