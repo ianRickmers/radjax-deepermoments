@@ -16,7 +16,7 @@ from consts import *
 
 print(f"Using GPU: {jax.devices()}")
 # --------------------
-def render_cube(ray_coords, pixel_area, disk, nd_co, temperature, velocity_az, bbox, freqs, nu0):
+def render_cube(ray_coords, pixel_area, disk, nd_co, temperature, velocity_az, bbox, freqs, nu0, distance_pc):
     ray_coords_sph = grid.cartesian_to_spherical(ray_coords)
     ray_coords_polar = grid.spherical_to_zr(ray_coords_sph)
     
@@ -34,7 +34,7 @@ def render_cube(ray_coords, pixel_area, disk, nd_co, temperature, velocity_az, b
     alpha_tot = line_rte.alpha_total_co(disk.v_turb, gas_t)
 
     # print('computing spectral cube for a total of {} frequencies'.format(freqs.size))
-    images = line_rte.compute_spectral_cube_pmap(shard(freqs), gas_v, alpha_tot, n_up, n_dn, a_ud, b_ud, b_du, ray_coords, obs_dir, nu0, pixel_area)
+    images = line_rte.compute_spectral_cube_pmap(shard(freqs), gas_v, alpha_tot, n_up, n_dn, a_ud, b_ud, b_du, ray_coords, distance_pc, obs_dir, nu0, pixel_area)
     images = np.nan_to_num(images).reshape(freqs.size, *ray_coords.shape[:2])
     return images
 
@@ -164,7 +164,7 @@ def setup_disk_fields():
 # --------------------
 def render_disk_images():
     images = render_cube(
-        ray_coords, pixel_area, disk, nd_co, temperature, -velocity_az, bbox_disk, freqs, nu0
+        ray_coords, pixel_area, disk, nd_co, temperature, -velocity_az, bbox_disk, freqs, nu0, projection.distance
     )
     return images
 

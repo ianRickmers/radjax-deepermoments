@@ -17,7 +17,7 @@ Conventions
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Union, Tuple, Any, Dict
+from typing import Optional, Union, Tuple, Any, Dict, TYPE_CHECKING
 
 from flax import struct
 import jax
@@ -33,6 +33,9 @@ from .consts import arcsec, au, pc, cc
 import yaml
 
 ArrayLike = Union[jnp.ndarray, jnp.ndarray]
+
+if TYPE_CHECKING:
+    from .chemistry import MolecularData
 
 
 # ----------------------------------------------------------------------------- #
@@ -500,6 +503,7 @@ def render_cube(
     temperature_ray: jnp.ndarray,  # (H, W, N)
     velocity_ray: jnp.ndarray,     # (H, W, N, 3)
     *,
+    distance_pc: float,
     nu0: float,
     freqs: jnp.ndarray,            # (F,) [Hz]
     v_turb: float,
@@ -521,6 +525,8 @@ def render_cube(
         3D velocity vectors along rays.
     nu0: float,
         Central frequency, e.g. from alma_cube.nu0
+    distance_pc : float
+        Distance to the source [pc].
     freqs : (F,)
         Frequency channels [Hz].
     v_turb : float
@@ -564,7 +570,7 @@ def render_cube(
     images = compute_fn(
         freqs, velocity_ray, alpha_tot, n_up, n_dn,
         mol.a_ud, mol.b_ud, mol.b_du,
-        rays.coords_xyz, rays.obs_dir, nu0, rays.pixel_area
+        rays.coords_xyz, distance_pc, rays.obs_dir, nu0, rays.pixel_area
     )
     images = jnp.clip(jnp.nan_to_num(images).reshape(-1, rays.ny, rays.nx)[:freqs.size], 0.0)
 

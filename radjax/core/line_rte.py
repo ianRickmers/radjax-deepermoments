@@ -34,13 +34,14 @@ def compute_spectral_cube(
     b_ud: float,
     b_du: float,
     ray_coords: jnp.ndarray,
+    distance_pc: float,
     obs_dir: jnp.ndarray,
     nu0: float,
     pixel_area: float,
 ) -> jnp.ndarray:
     """
     Perform radiative transfer along rays to produce a spectral image cube (Jy/pixel).
-    
+
     Parameters
     ----------
     camera_freqs : jnp.ndarray
@@ -58,6 +59,8 @@ def compute_spectral_cube(
     ray_coords : jnp.ndarray
         Ray coordinates; shape ``(npix, npix, nray, 3)``. The second-to-last axis is the
         marching index along each ray.
+    distance_pc : float
+        Distance to the source [pc].
     obs_dir : jnp.ndarray
         Unit vector of the line of sight (towards the observer); shape ``(3,)``.
     nu0 : float
@@ -82,20 +85,20 @@ def compute_spectral_cube(
 
         h * nu_0                              h * nu_0
     j = ------ n_up * A_ud * φ(ω, ν)   ;  α = ------ (n_dn * B_du - n_up * B_ud) * φ(ω, ν)
-         4 π                                   4 π      
+         4 π                                   4 π
     """
     # Compute doppler shift
     # Note: doppler positive means moving toward observer, hence the minus sign
     doppler = -(1.0/cc) * jnp.sum(obs_dir * gas_v, axis=-1)
 
-    # Define a vector line profile over multiple camera frequencies 
+    # Define a vector line profile over multiple camera frequencies
     # The line profile is a Gaussian with width (alpha) and shifted by doppler
     dnu = expand_dims(camera_freqs, alpha_tot.ndim + 1, axis=-1) - nu0 - doppler * nu0
     line_profile = (cc / (alpha_tot * nu0 * jnp.sqrt(jnp.pi))) * jnp.exp(
         -(cc * dnu / (nu0 * alpha_tot)) ** 2
     )
-    
-    # Compute emissivity (j_nu) and extinction (alpha_nu) for radiative transfer 
+
+    # Compute emissivity (j_nu) and extinction (alpha_nu) for radiative transfer
     const = hh * nu0 / (4 * jnp.pi)
     j_nu  = const * n_up * a_ud  * line_profile
     a_nu  = const * (n_dn * b_du - n_up * b_ud) * line_profile
@@ -106,7 +109,7 @@ def compute_spectral_cube(
 
     # First order interpolation of the source
     source_1st = 0.5 * (j_nu[...,1:] + j_nu[...,:-1]) * ray_ds
-    
+
     # Second-order integration
     s_nu = j_nu / (a_nu + 1e-30)   # Radmc3d has +1e-99 but this results in nans
     beta = (dtau - 1 + jnp.exp(-dtau)) / (dtau + 1e-30)
@@ -119,7 +122,7 @@ def compute_spectral_cube(
     intensity = (source_2nd * attenuation).sum(axis=-1)
 
     # Conversion from erg/s/cm/cm/ster to Jy/pixel
-    image_fluxes_jy =  pixel_area / pc**2 * 1e23 * intensity
+    image_fluxes_jy = pixel_area / (distance_pc * pc) ** 2 * 1e23 * intensity
     return image_fluxes_jy
 
 def alpha_total(
@@ -158,12 +161,12 @@ def alpha_total(
 compute_spectral_cube_pmap = jax.pmap(
     compute_spectral_cube,
     axis_name="freq",
-    in_axes=(0, None, None, None, None, None, None, None, None, None, None, None),
+    in_axes=(0, None, None, None, None, None, None, None, None, None, None, None, None),
 )
 # Vectorize over frequency axis on a single device
 compute_spectral_cube_vmap = jax.vmap(
     compute_spectral_cube,
-    in_axes=(0, None, None, None, None, None, None, None, None, None, None, None),
+    in_axes=(0, None, None, None, None, None, None, None, None, None, None, None, None),
 )
 
 __all__ = [

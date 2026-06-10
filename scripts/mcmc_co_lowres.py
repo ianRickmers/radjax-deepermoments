@@ -30,7 +30,7 @@ noise_sigma = 0.0074
 ################################################################################
 # 6) Define the rendering functions in a functional style
 ################################################################################
-def render_cube_pinhole(ray_coords, pixel_area, disk_params, nd_co, temperature, velocity_az, bbox, freqs, nu0, obs_dir, molecular_table):
+def render_cube_pinhole(ray_coords, pixel_area, disk_params, nd_co, temperature, velocity_az, bbox, freqs, nu0, obs_dir, molecular_table, distance_pc):
     ray_coords_sph = grid.cartesian_to_spherical(ray_coords)
     ray_coords_polar = grid.spherical_to_zr(ray_coords_sph)
 
@@ -53,7 +53,7 @@ def render_cube_pinhole(ray_coords, pixel_area, disk_params, nd_co, temperature,
     print(f'computing pinhole spectral cube for a total of {freqs.size} frequencies')
     images = line_rte.compute_spectral_cube_pmap(
         shard(freqs), gas_v, alpha_tot, n_up, n_dn,
-        a_ud, b_ud, b_du, ray_coords, obs_dir, nu0, pixel_area
+        a_ud, b_ud, b_du, ray_coords, distance_pc, obs_dir, nu0, pixel_area
     )
     images = np.nan_to_num(images).reshape(freqs.size, *ray_coords.shape[:2])
     return images
@@ -214,7 +214,8 @@ images = render_cube_pinhole(
     freqs=freqs,
     nu0=nu0,
     obs_dir=obs_dir_pinhole,
-    molecular_table=molecular_table
+    molecular_table=molecular_table,
+    distance_pc=projection_pinhole.distance
 )
 images_blurred = sensor.fftconvolve_vmap(images, beam)
 
@@ -569,7 +570,8 @@ images_mcmc = render_cube_pinhole(
     freqs=freqs,
     nu0=nu0,
     obs_dir=obs_dir_pinhole_mcmc,
-    molecular_table=molecular_table
+    molecular_table=molecular_table,
+    distance_pc=projection_pinhole_mcmc.distance
 )
 
 images_mcmc_blurred = sensor.fftconvolve_vmap(images_mcmc, beam)

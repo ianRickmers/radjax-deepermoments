@@ -10,7 +10,7 @@ masses in grams (consistent with G).
 """
 
 from __future__ import annotations
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional, TYPE_CHECKING, Union
 from pathlib import Path
 import dataclasses as dc
 
@@ -27,6 +27,10 @@ from ..core import phys
 from ..core import grid
 from ..core import sensor
 from ..core import chemistry as chem
+
+if TYPE_CHECKING:
+    from ..core.chemistry import ChemistryParams, MolecularData
+    from ..core.sensor import RayBundle
 
 @struct.dataclass
 class BaseDisk:
@@ -370,7 +374,8 @@ def forward_model_with_rays(
     chem_params: ChemistryParams,
     mol: MolecularData,
     rays: RayBundle ,     
-    freqs: jnp.ndarray,       
+    freqs: jnp.ndarray,
+    distance_pc: float,
     beam_kernel: Optional[jnp.ndarray] = None,
     output: Literal["image","vis"] = "image",
     backend: Literal["vmap","pmap","none"] = "vmap",
@@ -393,6 +398,8 @@ def forward_model_with_rays(
         Prebuilt camera rays describing the projection geometry.
     freqs : jnp.ndarray of shape (F,)
         Frequency grid in Hz at which to compute the spectral cube.
+    distance_pc : float
+        Distance to the source [pc], used to convert intensity to Jy/pixel.
     beam_kernel : jnp.ndarray of shape (ny, nx), optional
         2D beam kernel. If provided, each frequency channel is convolved with it.
         If ``None`` (default), raw model images are returned.
@@ -452,6 +459,7 @@ def forward_model_with_rays(
         nd_ray=nd_ray,
         temperature_ray=temperature_ray,
         velocity_ray=velocity_ray,
+        distance_pc=distance_pc,
         nu0=mol.nu0,
         freqs=freqs,
         v_turb=disk_params.v_turb,
@@ -482,6 +490,7 @@ def forward_model_rotate_rays(
     phi_deg: float,
     posang_deg: float,
     freqs: jnp.ndarray,
+    distance_pc: float,
     beam_kernel: Optional[jnp.ndarray] = None,
     output: Literal["image","vis"] = "image",
     backend: Literal["vmap","pmap","none"] = "vmap",
@@ -514,6 +523,8 @@ def forward_model_rotate_rays(
         Position angle (roll about line of sight) in degrees.
     freqs : jnp.ndarray of shape (F,)
         Frequency grid in Hz at which to compute the spectral cube.
+    distance_pc : float
+        Distance to the source [pc], used to convert intensity to Jy/pixel.
     beam_kernel : jnp.ndarray of shape (ny, nx), optional
         2D beam kernel. If provided, each frequency channel is convolved with it.
         If ``None`` (default), raw model images are returned.
@@ -564,6 +575,7 @@ def forward_model_rotate_rays(
         mol=mol,
         rays=rays,
         freqs=freqs,
+        distance_pc=distance_pc,
         beam_kernel=beam_kernel,
         output=output,
         backend=backend,
